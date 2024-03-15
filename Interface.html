@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<!-- Import necessary libraries from Google APIs, PyScript website -->
+<head>
+  <link href='https://fonts.googleapis.com/css?family=Montserrat' rel='stylesheet'>
+  <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+  <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+</head>
+
+<!-- Style adjustments -->
+<style> 
+    body {
+    	font-family: 'Montserrat';
+    	font-size: 20px;
+    	text-align: center;
+    	font-weight: bold;
+  	}
+    
+    .btn {
+    	background-color: white;
+        color: lightblue;
+        padding: 5px;
+    }
+    
+    .btn:hover {
+    	background-color: lightblue;
+        color: white;
+    }
+    select.dropdown {
+    	border: 1px solid black;
+    }
+</style>
+<body>
+
+<!-- Only accept HDF5 file types -->
+<label for="h5-upload">
+  Upload an H5 file here!
+<label>
+<input type="file" accept=".h5" id="myFile" name="filename" style="color: #029909;">
+<button class="btn" type="submit" py-click="test()">Submit!</button>
+<br>
+
+<!-- Now select UMAP, t-SNE, Diffmap, PCA in a dropdown menu -->
+<label for="dimred" style="color: black;"> Please choose a dimensionality reduction method: </label>
+
+<select class="dropdown" id="dimred" style="color: black;">
+  <option selected disabled>Choose a method...</option>
+  <option value="UMAP" style="color: red;">UMAP</option>
+  <option value="t-SNE" style="color: orange;">t-SNE</option>
+  <option value="Diffmap" style="color: yellow;">Diffmap</option>
+  <option value="PCA" style="color: green;">PCA</option>
+</select>
+
+<!-- we will embed different Python code into each method, initial split below -->
+<script>
+  document.getElementById("dimred").onchange = changeListener;
+  function changeListener() {
+    var value = this.value;
+    const elem = document.getElementById("js-results");
+    if (value == "UMAP"){
+      elem.innerHTML="The method chosen was UMAP";
+    } else if (value == "PCA"){
+      elem.innerHTML="The method chosen was PCA";
+    } else if (value == "t-SNE") {
+      elem.innerHTML="The method chosen was t-SNE";
+    } else if (value == "Diffmap") {
+      elem.innerHTML="The method chosen was Diffmap";
+    } else {
+      elem.innerHTML="Nothing selected";
+    }
+  }
+</script>
+<py-script>
+	def process_file():
+		# All libraries needed for visualization
+		import pandas as pd;
+		import matplotlib.pyplot as plt;
+		import plotly.io as pio;
+		import plotly.express as px;
+		pio.renderers.default = 'browser';
+		from sklearn.cluster import KMeans;
+		from sklearn.manifold import TSNE;
+		from pydiffmap import diffusion_map as dm;
+		from sklearn.preprocessing import StandardScaler;
+		from sklearn.decomposition import PCA;
+		import umap;
+		import scanpy as sc;
+    	print("Hi");
+    	return "hi";
+	def test():
+    	print("something")
+</py-script>
+<br><br>
+<div id="js-results" style="font-weight: normal;"></div>
+<div id="py-results" style="font-weight: normal;"></div>
+</html>
