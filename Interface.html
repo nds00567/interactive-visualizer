@@ -39,12 +39,11 @@
 <!-- Only accept HDF5 file types -->
 <label for="h5-upload">
   Upload an H5 file here!
-<label>
+</label>
 <input type="file" accept=".h5" id="myFile" name="filename" style="color: #029909;">
 <button class="btn" type="submit" py-click="test()">Submit!</button>
 <br>
 
-<!-- Now select UMAP, t-SNE, Diffmap, PCA in a dropdown menu -->
 <label for="dimred" style="color: black;"> Please choose a dimensionality reduction method: </label>
 
 <select class="dropdown" id="dimred" style="color: black;">
@@ -76,21 +75,26 @@
 </script>
 
 <!-- basically import packages-->
-<py-config type="toml">
-  packages = ["pandas", "plotly", "scikit-learn", "pydiffmap", "umap", "scanpy"]
-</py-config>
+<py-env>
+  - pandas
+  - plotly
+  - scikit-learn
+</py-env>
+
 <py-script>
-def processFile():
-  import pandas as pd
-  import plotly.io as pio
-  import plotly.express as px
-  from sklearn.cluster import KMeans
-  from sklearn.manifold import TSNE
-  from pydiffmap import diffusion_map as dm
-  from sklearn.preprocessing import StandardScaler
-  from sklearn.decomposition import PCA
-  import umap
-  import scanpy as sc
-  print("hi")
+import subprocess
+import pandas as pd
+import plotly.io as pio
+import plotly.express as px
+from sklearn.cluster import KMeans
+from sklearn.manifold import TSNE
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+def install(name):
+    subprocess.call([sys.executable, '-m', 'pip', 'install', name])
+if __name__ == '__main__':
+    install('scanpy')
+print("installation worked")
 </py-script>
 </html>
