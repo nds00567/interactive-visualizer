@@ -5,10 +5,9 @@
   <link href='https://fonts.googleapis.com/css?family=Montserrat' rel='stylesheet'>
   <meta charset="UTF-8">
   <meta name="viewport"
-    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge, chrome=1">
-  <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
-  <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+  <script defer src="https://pyscript.net/latest/pyscript.js"></script>
 </head>
 
 <!-- Style adjustments -->
@@ -20,37 +19,28 @@
     	font-weight: bold;
   	}
     
+    .container {
+      text-align: center;
+    }
     .btn {
     	display: inline-block;
+    	font-size: 22px;
       padding: 0.5em 1em;
       text-align: center;
       background: white;
-      background: linear-gradient(to left, white 50%, #a639e6 50%) right;
-      transition: .5s ease-out;
+      left: 50%;
     }
     
     .btn:hover {
-    	background-position: left;
+    	background: #a639e6;
+      color: white;
+      transition: .5s ease-out;
     }
 
-    .pca {
-      background: linear-gradient(to left, white 100%, #56d67a 0%) right;
+    .pca:hover {
+      background: #18de50;
     }
-
-    .tsne {
-      background: linear-gradient(to left, white 100%, #18de50 0%) right;
-    }
-
-    .diffmap {
-      background: linear-gradient(to left, white 100%, #66a8d4 0%) right;
-    }
-
-    .umap {
-      background: linear-gradient(to left, white 100%, #2999e3 0%) right;
-    }
-    select.dropdown {
-    	border: 1px solid black;
-    }
+    
 </style>
 <body>
 
@@ -58,31 +48,29 @@
 <label for="h5-upload">
   Upload an H5 file here!
 </label>
-<input type="file" accept=".h5" id="myFile" name="filename" style="color: #029909;">
-<button class="btn" type="submit" py-click="test()">Submit!</button>
-<br>
-
-<h3> Please choose a dimensionality reduction method: </h3>
-
-<button class="btn pca" py-click ="pca()">PCA</button>
-<button class="btn tsne" type="dimred" py-click ="tsne()">T-SNE</button>
-<button class="btn diffmap" type="dimred" py-click ="diffmap()">DIFFMAP</button>
-<button class="btn umap" type="dimred" py-click ="umap()">UMAP</button>
-
+<input type="file" accept=".h5" id="myH5File" name="filename" style="color: #029909;">
+<br><br>
+<div class="container">
+  <h3> Please choose a dimensionality reduction method: </h3>
+  <button id="pca button" class="btn pca" py-onClick ="PCA">PCA</button>
+  <button id="tsne button" class="btn" py-onClick ="tsne">T-SNE</button>
+</div>
 <!-- basically import packages-->
-<py-env>
-  - pandas
-  - plotly
-  - scikit-learn
-</py-env>
-
+<py-config style="color: white;">
+  packages = ["scikit-learn", "plotly", "pandas", "anndata", "disable_warnings", "matplotlib"]
+</py-config>
 <py-script>
 import pandas as pd
+import matplotlib.pyplot as plt
 import plotly.io as pio
 import plotly.express as px
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+import anndata
+from disable_warnings import *
+print("Hi")
 </py-script>
+<div id="output"></div>
 </html>
