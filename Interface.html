@@ -21,14 +21,32 @@
   	}
     
     .btn {
-    	background-color: white;
-        color: lightblue;
-        padding: 5px;
+    	display: inline-block;
+      padding: 0.5em 1em;
+      text-align: center;
+      background: white;
+      background: linear-gradient(to left, white 50%, #a639e6 50%) right;
+      transition: .5s ease-out;
     }
     
     .btn:hover {
-    	background-color: lightblue;
-        color: white;
+    	background-position: left;
+    }
+
+    .pca {
+      background: linear-gradient(to left, white 100%, #56d67a 0%) right;
+    }
+
+    .tsne {
+      background: linear-gradient(to left, white 100%, #18de50 0%) right;
+    }
+
+    .diffmap {
+      background: linear-gradient(to left, white 100%, #66a8d4 0%) right;
+    }
+
+    .umap {
+      background: linear-gradient(to left, white 100%, #2999e3 0%) right;
     }
     select.dropdown {
     	border: 1px solid black;
@@ -44,35 +62,12 @@
 <button class="btn" type="submit" py-click="test()">Submit!</button>
 <br>
 
-<label for="dimred" style="color: black;"> Please choose a dimensionality reduction method: </label>
+<h3> Please choose a dimensionality reduction method: </h3>
 
-<select class="dropdown" id="dimred" style="color: black;">
-  <option selected disabled>Choose a method...</option>
-  <option value="UMAP" style="color: red;">UMAP</option>
-  <option value="t-SNE" style="color: orange;">t-SNE</option>
-  <option value="Diffmap" style="color: yellow;">Diffmap</option>
-  <option value="PCA" style="color: green;">PCA</option>
-</select>
-
-<!-- we will embed different Python code into each method, initial split below -->
-<script>
-  document.getElementById("dimred").onchange = changeListener;
-  function changeListener() {
-    var value = this.value;
-    const elem = document.getElementById("js-results");
-    if (value == "UMAP"){
-      elem.innerHTML="The method chosen was UMAP";
-    } else if (value == "PCA"){
-      elem.innerHTML="The method chosen was PCA";
-    } else if (value == "t-SNE") {
-      elem.innerHTML="The method chosen was t-SNE";
-    } else if (value == "Diffmap") {
-      elem.innerHTML="The method chosen was Diffmap";
-    } else {
-      elem.innerHTML="Nothing selected";
-    }
-  }
-</script>
+<button class="btn pca" py-click ="pca()">PCA</button>
+<button class="btn tsne" type="dimred" py-click ="tsne()">T-SNE</button>
+<button class="btn diffmap" type="dimred" py-click ="diffmap()">DIFFMAP</button>
+<button class="btn umap" type="dimred" py-click ="umap()">UMAP</button>
 
 <!-- basically import packages-->
 <py-env>
@@ -82,7 +77,6 @@
 </py-env>
 
 <py-script>
-import subprocess
 import pandas as pd
 import plotly.io as pio
 import plotly.express as px
@@ -90,11 +84,5 @@ from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-
-def install(name):
-    subprocess.call([sys.executable, '-m', 'pip', 'install', name])
-if __name__ == '__main__':
-    install('scanpy')
-print("installation worked")
 </py-script>
 </html>
