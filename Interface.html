@@ -3,8 +3,12 @@
 <!-- Import necessary libraries from Google APIs, PyScript website -->
 <head>
   <link href='https://fonts.googleapis.com/css?family=Montserrat' rel='stylesheet'>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge, chrome=1">
   <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
-  <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+  <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
 </head>
 
 <!-- Style adjustments -->
@@ -70,27 +74,23 @@
     }
   }
 </script>
+
+<!-- basically import packages-->
+<py-config type="toml">
+  packages = ["pandas", "plotly", "scikit-learn", "pydiffmap", "umap", "scanpy"]
+</py-config>
 <py-script>
-	def process_file():
-		# All libraries needed for visualization
-		import pandas as pd;
-		import matplotlib.pyplot as plt;
-		import plotly.io as pio;
-		import plotly.express as px;
-		pio.renderers.default = 'browser';
-		from sklearn.cluster import KMeans;
-		from sklearn.manifold import TSNE;
-		from pydiffmap import diffusion_map as dm;
-		from sklearn.preprocessing import StandardScaler;
-		from sklearn.decomposition import PCA;
-		import umap;
-		import scanpy as sc;
-    	print("Hi");
-    	return "hi";
-	def test():
-    	print("something")
+def processFile():
+  import pandas as pd
+  import plotly.io as pio
+  import plotly.express as px
+  from sklearn.cluster import KMeans
+  from sklearn.manifold import TSNE
+  from pydiffmap import diffusion_map as dm
+  from sklearn.preprocessing import StandardScaler
+  from sklearn.decomposition import PCA
+  import umap
+  import scanpy as sc
+  print("hi")
 </py-script>
-<br><br>
-<div id="js-results" style="font-weight: normal;"></div>
-<div id="py-results" style="font-weight: normal;"></div>
 </html>
