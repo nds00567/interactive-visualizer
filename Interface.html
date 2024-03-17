@@ -64,7 +64,7 @@
   <button id="tsne button" class="btn tsne">T-SNE</button>
 </div>
 <!-- basically import packages-->
-<py-config style="color: white;">
+<py-config style="color: transparent; user-select: none;">
   packages = ["scikit-learn", "plotly", "pandas", "anndata", "disable_warnings", "requests"]
 </py-config>
 <py-script>
@@ -89,6 +89,9 @@ async def get_file(e):
       print("Before anndata read")
       df = ad.read_h5ad(file_content)
       js.console.log(df)
+def processFile(self):
+  print("PCA button works")
+
 get_file_proxy = pyodide.ffi.create_proxy(get_file)
 js.document.getElementById("myH5File").addEventListener("change", get_file_proxy)
 function_proxy = pyodide.ffi.create_proxy(processFile)
