@@ -41,14 +41,25 @@
       background: #18de50;
     }
     
+    .upload:hover {
+      background: #029909;
+    }
+    .choose:hover {
+      background: white;
+      color: black;
+    }
+    
 </style>
 <body>
 
 <!-- Only accept HDF5 file types -->
-<label for="h5-upload">
+<label for="myH5File">
   Upload an H5 file here!
 </label>
-<input type="file" accept=".h5" id="myH5File" name="filename" style="color: #029909;">
+<form id="uploadbanner" enctype="multipart/form-data" method="post">
+  <input type="file" class="btn choose" accept=".h5" id="myH5File">
+  <button id="upload button" class="btn upload">Upload</button>
+</form>
 <br><br>
 <div class="container">
   <h3> Please choose a dimensionality reduction method: </h3>
@@ -57,20 +68,28 @@
 </div>
 <!-- basically import packages-->
 <py-config style="color: white;">
-  packages = ["scikit-learn", "plotly", "pandas", "anndata", "disable_warnings", "matplotlib"]
+  packages = ["scikit-learn", "plotly", "pandas", "anndata", "disable_warnings"]
 </py-config>
 <py-script>
+from js import document 
+from pyodide.ffi import create_proxy
 import pandas as pd
-import matplotlib.pyplot as plt
 import plotly.io as pio
 import plotly.express as px
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-import anndata
-from disable_warnings import *
-print("Hi")
+import anndata as ad
+
+def processFile(self):
+  filename = document.getElementById('myH5File').value;
+  print(filename)
+  print("you clicked me")
+
+function_proxy = create_proxy(processFile)
+
+document.getElementById("upload button").addEventListener("click", function_proxy)
 </py-script>
 <div id="output"></div>
 </html>
