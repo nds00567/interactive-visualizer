@@ -8,6 +8,7 @@
     content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge, chrome=1">
   <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+  <script src='https://cdn.plot.ly/plotly-latest.min.js'></script> 
 </head>
 
 <!-- Style adjustments -->
@@ -69,12 +70,11 @@
 </py-config>
 <py-script>
 import os
-import js
+import js, json
 import io
 import pyodide
 import pandas as pd
-import plotly.io as pio
-import plotly.express as px
+import plotly.graph_objects as go
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
@@ -89,19 +89,16 @@ async def processFile(e):
       data = js.Uint8Array.new(await file.arrayBuffer())
       df = ad.read_h5ad(io.BytesIO(bytearray(data))).to_df().round(4)
       print(df)
-      fig = px.scatter_3d(df, title='p65 Protein in Cytosol vs Nucleus of Activated Fibroblast Cells',
-                    x='p65 Protein Cytosol',
-                    y='p65 Protein Nucleus',
-                    z='p65 RNA Nucleus',
-                    hover_data=['p65 Protein Cytosol', 'p65 Protein Nucleus', 'p65 RNA Cytosol', 'p65 RNA Nucleus'],
-                    color='p65 Protein Nucleus',
-                    color_continuous_scale=px.colors.sequential.Bluered)
-      fig.update_traces(textposition='top center', marker=dict(size=5))
-      fig.update_layout(title_x=0.5, font=dict(color='black',size=12))
-      embedable_chart = plotly.offline.plot(fig, include_plotlyjs=False, output_type="div")
-      f = open("embedable_chart.text", "w")
-      f.write(embedable_chart)
-      f.close()
+      fig = go.Figure(data = [go.Scatter3d(x = df["p65 Protein Cytosol"], 
+        y = df["p65 RNA Cytosol"], 
+        z = df["p65 Protein Nucleus"],
+        mode = "markers",
+        marker = dict(
+          size = 4,
+          color = z,
+          colorscale='Bluered'))])
+      graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+      plot = js.Plotly.newPlot("chart", js.JSON.parse(graphJSON))
 def PCA(self):
   print("PCA button works")
 processFile_proxy = pyodide.ffi.create_proxy(processFile)
@@ -110,6 +107,6 @@ PCA_proxy = pyodide.ffi.create_proxy(PCA)
 js.document.getElementById("pca button").addEventListener("click", PCA_proxy)
 </py-script>
 <h4>Interactive Graph Here</h4>
-{{fig}}
+<div id="chart"></div>
 <p>We're done</p>
 </html>
