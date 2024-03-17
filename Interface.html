@@ -70,7 +70,8 @@
 <py-script>
 import os
 import requests
-import js 
+import js
+import io
 import pyodide
 import pandas as pd
 import plotly.io as pio
@@ -87,7 +88,7 @@ async def get_file(e):
     for file in files:
       file_content = await file.text()
       print("Before anndata read")
-      df = ad.read_h5ad(file_content)
+      df = ad.read_h5ad(io.BytesIO(file_content.encode())).to_df().round(4)
       js.console.log(df)
 def processFile(self):
   print("PCA button works")
