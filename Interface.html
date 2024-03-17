@@ -44,6 +44,10 @@
     .tsne:hover {
       background: #223dd4;
     }
+    
+    .kmeans:hover {
+      background: #a53cbd;
+    }
     .choose:hover {
       background: white;
       color: black;
@@ -59,17 +63,17 @@
 <input type="file" class="btn choose" accept=".h5" id="myH5File">
 <br><br>
 <div class="container">
-  <h3> Please choose a dimensionality reduction method: </h3>
+  <h3> Please choose a dimensionality reduction method (default: K-Means): </h3>
   <button id="pca button" class="btn pca">PCA</button>
   <button id="tsne button" class="btn tsne">T-SNE</button>
+  <button id="kmeans button" class="btn kmeans">K-MEANS</button>
 </div>
 <!-- basically import packages-->
 <py-config style="color: transparent; user-select: none;">
-  packages = ["scikit-learn", "plotly", "pandas", "anndata", "disable_warnings", "requests"]
+  packages = ["scikit-learn", "plotly", "pandas", "anndata", "disable_warnings"]
 </py-config>
 <py-script>
 import os
-import requests
 import js
 import io
 import pyodide
@@ -83,26 +87,26 @@ from sklearn.decomposition import PCA
 import anndata as ad
 from disable_warnings import *
 
+
 async def processFile(e):
     files = e.target.files.to_py()
     for file in files:
       data = js.Uint8Array.new(await file.arrayBuffer())
-      print("Before anndata read")
       df = ad.read_h5ad(io.BytesIO(bytearray(data))).to_df().round(4)
       print(df)
-      # fig = px.scatter_3d(df, title='p65 Protein in Cytosol vs Nucleus of Activated Fibroblast Cells',
+      fig = px.scatter_3d(df, title='p65 Protein in Cytosol vs Nucleus of Activated Fibroblast Cells',
                     x='p65 Protein Cytosol',
                     y='p65 Protein Nucleus',
                     z='p65 RNA Nucleus',
                     hover_data=['p65 Protein Cytosol', 'p65 Protein Nucleus', 'p65 RNA Cytosol', 'p65 RNA Nucleus'],
                     color='p65 Protein Nucleus',
                     color_continuous_scale=px.colors.sequential.Bluered)
-      # fig.update_traces(textposition='top center', marker=dict(size=5))
-      # fig.update_layout(title_x=0.5, font=dict(color='black',size=12))
-      # fig.add_annotation(x=0.8,y=0.9, text="As p65 expression increases, so does the level of stimulation/probability of overactivation", showarrow=False,
-        xanchor="right")
-      # pio.show(fig)
-      
+      fig.update_traces(textposition='top center', marker=dict(size=5))
+      fig.update_layout(title_x=0.5, font=dict(color='black',size=12))
+      embedable_chart = plotly.offline.plot(fig, include_plotlyjs=False, output_type="div")
+      f = open("embedable_chart.text", "w")
+      f.write(embedable_chart)
+      f.close()
 def PCA(self):
   print("PCA button works")
 processFile_proxy = pyodide.ffi.create_proxy(processFile)
@@ -110,4 +114,7 @@ js.document.getElementById("myH5File").addEventListener("change", processFile_pr
 PCA_proxy = pyodide.ffi.create_proxy(PCA)
 js.document.getElementById("pca button").addEventListener("click", PCA_proxy)
 </py-script>
+<h4>Interactive Graph Here</h4>
+{{fig}}
+<p>We're done</p>
 </html>
