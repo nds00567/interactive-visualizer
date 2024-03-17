@@ -70,8 +70,8 @@
 <py-script>
 import os
 import requests
-from js import document 
-from pyodide.ffi import create_proxy
+import js 
+import pyodide
 import pandas as pd
 import plotly.io as pio
 import plotly.express as px
@@ -80,19 +80,18 @@ from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import anndata as ad
+from disable_warnings import *
 
-def processFile(self):
-  filename = document.getElementById('myH5File').value.replace("C:\\fakepath\\", "");
-  target_file = open(filename, "rb")
-  response = requests.post("https://httpbin.org/post", files = {"form_field_name": target_file})
-  if response.ok:
-    print("Upload complete")
-    print(response.text)
-  else:
-    print("Something went wrong")
-
-function_proxy = create_proxy(processFile)
-
-document.getElementById("pca button").addEventListener("click", function_proxy)
+async def get_file(e):
+    files = e.target.files.to_py()
+    for file in files:
+      file_content = await file.text()
+      print("Before anndata read")
+      df = ad.read_h5ad(file_content)
+      js.console.log(df)
+get_file_proxy = pyodide.ffi.create_proxy(get_file)
+js.document.getElementById("myH5File").addEventListener("change", get_file_proxy)
+function_proxy = pyodide.ffi.create_proxy(processFile)
+js.document.getElementById("pca button").addEventListener("click", function_proxy)
 </py-script>
 </html>
