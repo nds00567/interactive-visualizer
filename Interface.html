@@ -26,13 +26,13 @@
     	display: inline-block;
     	font-size: 22px;
       padding: 0.5em 1em;
+      border: none;
       text-align: center;
       background: white;
       left: 50%;
     }
     
     .btn:hover {
-    	background: #a639e6;
       color: white;
       transition: .5s ease-out;
     }
@@ -41,8 +41,8 @@
       background: #18de50;
     }
     
-    .upload:hover {
-      background: #029909;
+    .tsne:hover {
+      background: #223dd4;
     }
     .choose:hover {
       background: white;
@@ -57,18 +57,19 @@
   Upload an H5 file here!
 </label>
 <input type="file" class="btn choose" accept=".h5" id="myH5File">
-<button id="upload button" class="btn upload">Upload</button>
 <br><br>
 <div class="container">
   <h3> Please choose a dimensionality reduction method: </h3>
-  <button id="pca button" class="btn pca" py-onClick ="PCA">PCA</button>
-  <button id="tsne button" class="btn" py-onClick ="tsne">T-SNE</button>
+  <button id="pca button" class="btn pca">PCA</button>
+  <button id="tsne button" class="btn tsne">T-SNE</button>
 </div>
 <!-- basically import packages-->
 <py-config style="color: white;">
-  packages = ["scikit-learn", "plotly", "pandas", "anndata", "disable_warnings"]
+  packages = ["scikit-learn", "plotly", "pandas", "anndata", "disable_warnings", "requests"]
 </py-config>
 <py-script>
+import os
+import requests
 from js import document 
 from pyodide.ffi import create_proxy
 import pandas as pd
@@ -81,13 +82,17 @@ from sklearn.decomposition import PCA
 import anndata as ad
 
 def processFile(self):
-  filename = document.getElementById('myH5File').value;
-  print(filename)
-  print("you clicked me")
+  filename = document.getElementById('myH5File').value.replace("C:\\fakepath\\", "");
+  target_file = open(filename, "rb")
+  response = requests.post("https://httpbin.org/post", files = {"form_field_name": target_file})
+  if response.ok:
+    print("Upload complete")
+    print(response.text)
+  else:
+    print("Something went wrong")
 
 function_proxy = create_proxy(processFile)
 
-document.getElementById("upload button").addEventListener("click", function_proxy)
+document.getElementById("pca button").addEventListener("click", function_proxy)
 </py-script>
-<div id="output"></div>
 </html>
