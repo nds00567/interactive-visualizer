@@ -66,7 +66,7 @@
 
 <!-- allow the user to choose between PCA and t-SNE -->
 <div class="container">
-  <h3> Please choose a dimensionality reduction method (default: K-Means): </h3>
+  <h3> Please choose a dimensionality reduction method: </h3>
   <button id="pca button" class="btn pca">PCA</button>
   <button id="tsne button" class="btn tsne">T-SNE</button>
 </div>
@@ -77,6 +77,13 @@
   packages = ["scikit-learn", "matplotlib", "anndata", "disable_warnings"]
 </py-config>
 
+<!-- enable download -->
+<script>
+  function createLink(dataURL) {
+    a = document.getElementById("pca download link");
+    a.href = dataURL;
+  }
+</script>
 <!-- main Python code -->
 <py-script>
   
@@ -116,8 +123,10 @@
       ax.set_xlabel("X-axis")
       ax.set_ylabel("Y-axis")
       encoded = fig_to_base64(fig)
-      my_html = '<img src="data:image/png;base64, {}">'.format(encoded.decode('utf-8'))
-      js.document.getElementById("pca matplotlib").innerHTML = my_html;
+      my_html = '<img src="data:image/png;base64,{}">'.format(encoded.decode("utf-8"))
+      dataURL = "data:image/png;base64," + encoded.decode("utf-8")
+      js.createLink(dataURL)
+      js.document.getElementById("pca download link").innerHTML = my_html;
   
   # Hide the t-SNE plot
   def PCA(self):
@@ -137,7 +146,9 @@
 </py-script>
 
 <!-- PCA plot div, hide if t-SNE selected-->
-<div id="pca matplotlib"></div>
+<div id="pca matplotlib">
+  <a id="pca download link" download="plot.png"></a>
+</div>
 
 <!-- t-SNE plot div, hide if PCA selected -->
 <div id="tsne matplotlib"></div>
