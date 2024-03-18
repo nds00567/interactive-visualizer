@@ -74,82 +74,131 @@
 
 <!--import packages -->
 <py-config style="color: transparent; user-select: none;">
-  packages = ["scikit-learn", "matplotlib", "anndata", "disable_warnings"]
+  packages = ["pandas", "scikit-learn", "matplotlib", "anndata", "disable_warnings"]
 </py-config>
 
 <!-- enable download -->
 <script>
-  function createLink(dataURL) {
-    a = document.getElementById("pca download link");
+  function createLink(dataURL, id) {
+    a = document.getElementById(id);
     a.href = dataURL;
   }
 </script>
 <!-- main Python code -->
 <py-script>
-  
-  # import necessary libraries
-  import js
-  import io
-  import base64
-  import pyodide
-  import matplotlib.pyplot as plt
-  from sklearn.cluster import KMeans
-  from sklearn.manifold import TSNE
-  from sklearn.preprocessing import StandardScaler
-  from sklearn.decomposition import PCA
-  import anndata as ad
-  from disable_warnings import *
-  
-  # Upon uploading a file, we want to generate an interactive graph
-  
-  # Base64 encoder to enable embedding the image itself into the div
-  def fig_to_base64(fig):
-    img = io.BytesIO()
-    fig.savefig(img, format='png',
-                bbox_inches='tight')
-    img.seek(0)
 
-    return base64.b64encode(img.getvalue())
+# import necessary libraries
+import pandas as pd
+import js
+import io
+import base64
+import pyodide
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.manifold import TSNE
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+import anndata as ad
+from disable_warnings import *
 
-  # Process the .h5 uploaded once the file selected changes from 'No file selected'
-  async def processFile(e):
-    files = e.target.files.to_py()
-    for file in files:
-      data = js.Uint8Array.new(await file.arrayBuffer())
-      df = ad.read_h5ad(io.BytesIO(bytearray(data))).to_df().round(4)
-      fig, ax = plt.subplots()
-      ax.scatter(df["p65 Protein Cytosol"], df["p65 Protein Nucleus"])
-      ax.set_title("My Plot")
-      ax.set_xlabel("X-axis")
-      ax.set_ylabel("Y-axis")
-      encoded = fig_to_base64(fig)
-      my_html = '<img src="data:image/png;base64,{}">'.format(encoded.decode("utf-8"))
-      dataURL = "data:image/png;base64," + encoded.decode("utf-8")
-      js.createLink(dataURL)
-      js.document.getElementById("pca download link").innerHTML = my_html;
-  
-  # Hide the t-SNE plot
-  def PCA(self):
-    print("PCA button works")
-  
-  # Hide the PCA plot
-  def TSNE(self):
-    print("t-SNE button works")
-  
-  # Increase user interactivity
-  process_proxy = pyodide.ffi.create_proxy(processFile)
-  js.document.getElementById("myH5File").addEventListener("change", process_proxy)
-  PCA_proxy = pyodide.ffi.create_proxy(PCA)
-  js.document.getElementById("pca button").addEventListener("click", PCA_proxy)
-  TSNE_proxy = pyodide.ffi.create_proxy(TSNE)
-  js.document.getElementById("tsne button").addEventListener("click", TSNE_proxy)
+# Upon uploading a file, we want to generate an interactive graph
+# Base64 encoder to enable embedding the image itself into the div
+def fig_to_base64(fig):
+  img = io.BytesIO()
+  fig.savefig(img, format='png', bbox_inches='tight')
+  img.seek(0)
+  return base64.b64encode(img.getvalue())
+
+# Process the .h5 uploaded once the file selected changes from 'No file selected'
+async def processFile(e):
+  files = e.target.files.to_py()
+  for file in files:
+    data = js.Uint8Array.new(await file.arrayBuffer())
+    df = ad.read_h5ad(io.BytesIO(bytearray(data))).to_df().round(4)
+    
+    # PCA Graph
+    X = StandardScaler().fit_transform(df)
+    pca = PCA(n_components = 3).fit_transform(X)
+    pca_df = pd.DataFrame(pca, columns = ["PC 1", "PC 2", "PC 3"])
+    kmeans = KMeans(n_clusters=3, random_state=1).fit(df)
+    predicted_clusters = kmeans.predict(df)
+    df['kmean'] = kmeans.labels_
+    colors = ['orange', 'green', 'blue']
+    x = pca_df["PC 1"]
+    y = pca_df["PC 2"]
+    z = pca_df["PC 3"]
+    fig1 = plt.figure()
+    ax = fig1.add_subplot(projection='3d')
+    for i in range(3):
+      idx = predicted_clusters == i
+      ax.scatter(x[idx], y[idx], z[idx], color=colors[i], s=10, alpha=0.25)
+    ax.set_title("Single-Cell Behavior (PCA Analysis)")
+    ax.set_xlabel("PC 1")
+    ax.set_ylabel("PC 2")
+    ax.set_zlabel("PC 3")
+    pca_encoded = fig_to_base64(fig1)
+    my_html = '<img src="data:image/png;base64,{}">'.format(pca_encoded.decode("utf-8"))
+    dataURL = "data:image/png;base64," + pca_encoded.decode("utf-8")
+    js.createLink(dataURL, "pca download link")
+    js.document.getElementById("pca download link").innerHTML = my_html
+    
+    # T-SNE Graph
+    tsne = TSNE(n_components=3,init="random",random_state=0,n_iter=300)
+    tsne = tsne.fit_transform(df)
+    tsne_df = pd.DataFrame(tsne, columns = ["t-SNE 1", "t-SNE 2", "t-SNE 3"])
+    kmeans = KMeans(n_clusters=3, random_state=0).fit(df)
+    y_kmeans = kmeans.predict(df)
+    df['kmean'] = kmeans.labels_
+    colors = ['red', 'green', 'blue']
+    x = tsne_df["t-SNE 1"]
+    y = tsne_df["t-SNE 2"]
+    z = tsne_df["t-SNE 3"]
+    df = df.reset_index().drop("index", axis=1)
+    combined_df = pd.concat([tsne_df, df], axis = 1)
+    fig2 = plt.Figure()
+    ax = fig2.add_subplot(projection="3d")
+    for i in range(3):
+      idx = y_kmeans == i
+      ax.scatter(x[idx], y[idx], z[idx], color=colors[i], s=10, alpha=0.25)
+    ax.set_title("Single-Cell Behavior (t-SNE Analysis)")
+    ax.set_xlabel("T-SNE 1")
+    ax.set_ylabel("T-SNE 2")
+    ax.set_zlabel("T-SNE 3")
+    tsne_encoded = fig_to_base64(fig2)
+    my_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
+    dataURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
+    js.createLink(dataURL, "tsne download link")
+    js.document.getElementById("tsne download link").innerHTML = my_html
+
+# Hide the t-SNE plot
+def PCA_change(self):
+    js.document.getElementById("comment").style.display = "inline-block"
+    js.document.getElementById("pca matplotlib").style.display = "inline-block"
+    js.document.getElementById("tsne matplotlib").style.display = "none"
+
+# Hide the PCA plot
+def TSNE_change(self):
+    js.document.getElementById("comment").style.display = "inline-block"
+    js.document.getElementById("tsne matplotlib").style.display = "inline-block"
+    js.document.getElementById("pca matplotlib").style.display = "none"
+
+# Increase user interactivity
+process_proxy = pyodide.ffi.create_proxy(processFile)
+js.document.getElementById("myH5File").addEventListener("change", process_proxy)
+PCA_proxy = pyodide.ffi.create_proxy(PCA_change)
+js.document.getElementById("pca button").addEventListener("click", PCA_proxy)
+TSNE_proxy = pyodide.ffi.create_proxy(TSNE_change)
+js.document.getElementById("tsne button").addEventListener("click", TSNE_proxy)
 </py-script>
 
-<!-- PCA plot div, hide if t-SNE selected-->
-<div id="pca matplotlib">
-  <a id="pca download link" download="plot.png"></a>
+<!-- PCA plot div, show if PCA selected-->
+<div id="pca matplotlib" style="display: none;">
+    <a id="pca download link" download="pca plot.png"></a>
 </div>
 
-<!-- t-SNE plot div, hide if PCA selected -->
-<div id="tsne matplotlib"></div>
+<!-- t-SNE plot div, show if t-SNE selected -->
+<div id="tsne matplotlib" style="display: none;">
+	<a id="tsne download link" download="tsne plot.png"></a>
+</div>
+<p id="comment" style="display: none;">To use this viewer, either play around with the interactive plot to see your data come to life, or save the static image generated! To do this, either click on the image, or alternatively, take a screenshot!</p>
 </html>
