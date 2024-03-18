@@ -82,7 +82,7 @@ from sklearn.decomposition import PCA
 import anndata as ad
 from disable_warnings import *
 
-matplotlib.pyplot.ion()
+plt.ion()
 async def processFile(e):
     files = e.target.files.to_py()
     for file in files:
