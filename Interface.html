@@ -51,25 +51,36 @@
     
 </style>
 <body>
+  
+<!-- loading screen -->
 <dialog id="loading">
   <h1>Loading...</h1>
 </dialog>
+
 <!-- Only accept HDF5 file types -->
 <label for="myH5File">
   Upload an H5 file here!
 </label>
 <input type="file" class="btn choose" accept=".h5, .hdf5" id="myH5File">
 <br><br>
+
+<!-- allow the user to choose between PCA and t-SNE -->
 <div class="container">
   <h3> Please choose a dimensionality reduction method (default: K-Means): </h3>
   <button id="pca button" class="btn pca">PCA</button>
   <button id="tsne button" class="btn tsne">T-SNE</button>
 </div>
-<!-- basically import packages-->
+
+
+<!--import packages -->
 <py-config style="color: transparent; user-select: none;">
   packages = ["scikit-learn", "matplotlib", "anndata", "disable_warnings"]
 </py-config>
+
+<!-- main Python code -->
 <py-script>
+  
+  # import necessary libraries
   import js
   import io
   import base64
@@ -81,9 +92,10 @@
   from sklearn.decomposition import PCA
   import anndata as ad
   from disable_warnings import *
-  # Upon uploading a file, we want to generate an interactive graph
-  plt.ion()
   
+  # Upon uploading a file, we want to generate an interactive graph
+  
+  # Base64 encoder to enable embedding the image itself into the div
   def fig_to_base64(fig):
     img = io.BytesIO()
     fig.savefig(img, format='png',
@@ -92,6 +104,7 @@
 
     return base64.b64encode(img.getvalue())
 
+  # Process the .h5 uploaded once the file selected changes from 'No file selected'
   async def processFile(e):
     files = e.target.files.to_py()
     for file in files:
@@ -105,14 +118,16 @@
       encoded = fig_to_base64(fig)
       my_html = '<img src="data:image/png;base64, {}">'.format(encoded.decode('utf-8'))
       js.document.getElementById("pca matplotlib").innerHTML = my_html;
-    #  pyscript.display(fig, target="pca matplotlib")
   
+  # Hide the t-SNE plot
   def PCA(self):
     print("PCA button works")
   
+  # Hide the PCA plot
   def TSNE(self):
     print("t-SNE button works")
   
+  # Increase user interactivity
   process_proxy = pyodide.ffi.create_proxy(processFile)
   js.document.getElementById("myH5File").addEventListener("change", process_proxy)
   PCA_proxy = pyodide.ffi.create_proxy(PCA)
@@ -120,6 +135,10 @@
   TSNE_proxy = pyodide.ffi.create_proxy(TSNE)
   js.document.getElementById("tsne button").addEventListener("click", TSNE_proxy)
 </py-script>
+
+<!-- PCA plot div, hide if t-SNE selected-->
 <div id="pca matplotlib"></div>
-<div id="test"></div>
+
+<!-- t-SNE plot div, hide if PCA selected -->
+<div id="tsne matplotlib"></div>
 </html>
