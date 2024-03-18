@@ -8,6 +8,7 @@
     content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge, chrome=1">
   <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
   <script src='https://cdn.plot.ly/plotly-latest.min.js'></script> 
 </head>
 
@@ -66,15 +67,14 @@
 </div>
 <!-- basically import packages-->
 <py-config style="color: transparent; user-select: none;">
-  packages = ["scikit-learn", "plotly", "pandas", "anndata", "disable_warnings"]
+  packages = ["scikit-learn", "matplotlib", "mpld3", "anndata", "disable_warnings"]
 </py-config>
 <py-script>
 import os
-import js, json
+import js
 import io
 import pyodide
-import pandas as pd
-import plotly.graph_objects as go
+import matplotlib.pyplot as plt, mpld3
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
@@ -82,23 +82,14 @@ from sklearn.decomposition import PCA
 import anndata as ad
 from disable_warnings import *
 
-
+matplotlib.pyplot.ion()
 async def processFile(e):
     files = e.target.files.to_py()
     for file in files:
       data = js.Uint8Array.new(await file.arrayBuffer())
       df = ad.read_h5ad(io.BytesIO(bytearray(data))).to_df().round(4)
       print(df)
-      fig = go.Figure(data = [go.Scatter3d(x = df["p65 Protein Cytosol"], 
-        y = df["p65 RNA Cytosol"], 
-        z = df["p65 Protein Nucleus"],
-        mode = "markers",
-        marker = dict(
-          size = 4,
-          color = z,
-          colorscale='Bluered'))])
-      graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-      plot = js.Plotly.newPlot("chart", js.JSON.parse(graphJSON))
+      
 def PCA(self):
   print("PCA button works")
 processFile_proxy = pyodide.ffi.create_proxy(processFile)
