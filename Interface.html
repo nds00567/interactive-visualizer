@@ -8,8 +8,6 @@
     content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge, chrome=1">
   <script defer src="https://pyscript.net/latest/pyscript.js"></script>
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-  <script src='https://cdn.plot.ly/plotly-latest.min.js'></script> 
 </head>
 
 <!-- Style adjustments -->
@@ -53,7 +51,9 @@
     
 </style>
 <body>
-
+<dialog id="loading">
+  <h1>Loading...</h1>
+</dialog>
 <!-- Only accept HDF5 file types -->
 <label for="myH5File">
   Upload an H5 file here!
@@ -67,37 +67,59 @@
 </div>
 <!-- basically import packages-->
 <py-config style="color: transparent; user-select: none;">
-  packages = ["scikit-learn", "matplotlib", "mpld3", "anndata", "disable_warnings"]
+  packages = ["scikit-learn", "matplotlib", "anndata", "disable_warnings"]
 </py-config>
 <py-script>
-import os
-import js
-import io
-import pyodide
-import matplotlib.pyplot as plt, mpld3
-from sklearn.cluster import KMeans
-from sklearn.manifold import TSNE
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-import anndata as ad
-from disable_warnings import *
+  import js
+  import io
+  import base64
+  import pyodide
+  import matplotlib.pyplot as plt
+  from sklearn.cluster import KMeans
+  from sklearn.manifold import TSNE
+  from sklearn.preprocessing import StandardScaler
+  from sklearn.decomposition import PCA
+  import anndata as ad
+  from disable_warnings import *
+  # Upon uploading a file, we want to generate an interactive graph
+  plt.ion()
+  
+  def fig_to_base64(fig):
+    img = io.BytesIO()
+    fig.savefig(img, format='png',
+                bbox_inches='tight')
+    img.seek(0)
 
-plt.ion()
-async def processFile(e):
+    return base64.b64encode(img.getvalue())
+
+  async def processFile(e):
     files = e.target.files.to_py()
     for file in files:
       data = js.Uint8Array.new(await file.arrayBuffer())
       df = ad.read_h5ad(io.BytesIO(bytearray(data))).to_df().round(4)
-      print(df)
-      
-def PCA(self):
-  print("PCA button works")
-processFile_proxy = pyodide.ffi.create_proxy(processFile)
-js.document.getElementById("myH5File").addEventListener("change", processFile_proxy)
-PCA_proxy = pyodide.ffi.create_proxy(PCA)
-js.document.getElementById("pca button").addEventListener("click", PCA_proxy)
+      fig, ax = plt.subplots()
+      ax.scatter(df["p65 Protein Cytosol"], df["p65 Protein Nucleus"])
+      ax.set_title("My Plot")
+      ax.set_xlabel("X-axis")
+      ax.set_ylabel("Y-axis")
+      encoded = fig_to_base64(fig)
+      my_html = '<img src="data:image/png;base64, {}">'.format(encoded.decode('utf-8'))
+      js.document.getElementById("pca matplotlib").innerHTML = my_html;
+    #  pyscript.display(fig, target="pca matplotlib")
+  
+  def PCA(self):
+    print("PCA button works")
+  
+  def TSNE(self):
+    print("t-SNE button works")
+  
+  process_proxy = pyodide.ffi.create_proxy(processFile)
+  js.document.getElementById("myH5File").addEventListener("change", process_proxy)
+  PCA_proxy = pyodide.ffi.create_proxy(PCA)
+  js.document.getElementById("pca button").addEventListener("click", PCA_proxy)
+  TSNE_proxy = pyodide.ffi.create_proxy(TSNE)
+  js.document.getElementById("tsne button").addEventListener("click", TSNE_proxy)
 </py-script>
-<h4>Interactive Graph Here</h4>
-<div id="chart"></div>
-<p>We're done</p>
+<div id="pca matplotlib"></div>
+<div id="test"></div>
 </html>
