@@ -75,7 +75,7 @@
 
 <!--import packages -->
 <py-config style="color: transparent; user-select: none;">
-  packages = ["pandas", "scikit-learn", "matplotlib", "anndata", "disable_warnings"]
+  packages = ["pandas", "scikit-learn", "matplotlib", "anndata", "disable_warnings", "mpld3"]
 </py-config>
 
 <!-- enable download -->
@@ -94,7 +94,9 @@ import js
 import io
 import base64
 import pyodide
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import mpld3
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
@@ -115,8 +117,7 @@ async def processFile(e):
   files = e.target.files.to_py()
   for file in files:
     data = js.Uint8Array.new(await file.arrayBuffer())
-    df = ad.read_h5ad(io.BytesIO(bytearray(data))).to_df().round(4)
-    cleaned_df = df.reset_index().drop("index", axis=1)
+    df = ad.read_h5ad(io.BytesIO(bytearray(data))).to_df().round(4).reset_index().drop("index", axis=1)
     # PCA Graph
     X = StandardScaler().fit_transform(df)
     pca = PCA(n_components = 2).fit_transform(X)
@@ -124,12 +125,12 @@ async def processFile(e):
     kmeans = KMeans(n_clusters=4, random_state=0).fit(df)
     predicted_clusters = kmeans.predict(df)
     df['kmean'] = kmeans.labels_
-    colors = ['blue', 'yellow', 'green', 'red']
+    colors = ['blue', 'purple', 'green', 'red']
     x = pca_df["PC 1"]
     y = pca_df["PC 2"]
     fig1, ax = plt.subplots()
-    pca_combined_df = pd.concat([pca_df, cleaned_df], axis = 1)
-    sc = ax.scatter(pca_combined_df["PC 1"], pca_combined_df["t-SNE 2"], c=pca_combined_df["kmean"], cmap="brg", s=3)
+    pca_combined_df = pd.concat([pca_df, df], axis = 1)
+    sc = ax.scatter(pca_combined_df["PC 1"], pca_combined_df["PC 2"], c=pca_combined_df["kmean"], cmap="brg", s=3)
     ax.set_title("Single-Cell Behavior (PCA Analysis)")
     ax.set_xlabel("PC 1")
     ax.set_ylabel("PC 2")
@@ -148,28 +149,33 @@ async def processFile(e):
     y_kmeans = kmeans.predict(df)
     df['kmean'] = kmeans.labels_
     fig2, ax = plt.subplots()
-    tsne_combined_df = pd.concat([tsne_df, cleaned_df], axis = 1)
+    tsne_combined_df = pd.concat([tsne_df, df], axis = 1)
     sc2 = ax.scatter(tsne_combined_df["t-SNE 1"], tsne_combined_df["t-SNE 2"], c=tsne_combined_df["kmean"], cmap="brg", s=3)
     ax.set_title("Single-Cell Behavior (t-SNE Analysis)")
     custom_labels = []
     for index, row in tsne_combined_df.iterrows():
-	custom_label = ''
-        for col in col_names:
-	    x = tsne_combined_df["t-SNE 1"][index]
-	    y = tsne_combined_df["t-SNE 2"][index]
-	    custom_label += '{column_name}: {value:.4f}\n'.format(column_name=col, value=tsne_combined_df[col][index])
-        custom_labels += [custom_label]
+      custom_label = ''
+      for col in col_names:
+        x = tsne_combined_df["t-SNE 1"][index]
+        y = tsne_combined_df["t-SNE 2"][index]
+        custom_label += '{column_name}: {value:.4f}\n'.format(column_name=col, value=tsne_combined_df[col][index])
+      custom_labels += [custom_label]
     ax.set_xlabel("T-SNE 1")
     ax.set_ylabel("T-SNE 2")
     tooltip = mpld3.plugins.PointHTMLTooltip(sc2, labels=custom_labels, voffset=10, hoffset=10)
     mpld3.plugins.connect(fig2, tooltip)
-    tsne_html = mpld3.fig_to_html(fig2)
+    tsne_interactive_html = mpld3.fig_to_html(fig2)
+    print("html conversion")
     tsne_encoded = fig_to_base64(fig2)
+    print("static encoding")
     tsne_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
+    print("image link formed")
     tsneURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
+    print("Url made")
     js.createLink(tsneURL, "tsne download link")
     js.document.getElementById("tsne download link").innerHTML = tsne_html
-    js.document.getElementById("tsne interactive").innerHTML = tsne_html
+    js.document.getElementById("tsne interactive").innerHTML = tsne_interactive_html
+    print("t-SNE works!")
 
 # Hide the t-SNE plot
 def PCA_change(self):
@@ -195,7 +201,7 @@ js.document.getElementById("tsne button").addEventListener("click", TSNE_proxy)
 </py-script>
 
 <!-- PCA plot div (both interactive and static), show if PCA selected-->
-<div id="pca interactive" style="display: none;"></div>
+<embed type="text/html" id="pca interactive" style="display: none;">
 <div id="pca matplotlib" style="display: none;">
     <a id="pca download link" download="pca plot.png"></a>
 </div>
