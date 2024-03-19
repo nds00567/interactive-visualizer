@@ -85,6 +85,7 @@
     a.href = dataURL;
   }
 </script>
+
 <!-- main Python code -->
 <py-script>
 
@@ -92,6 +93,7 @@
 import pandas as pd
 import js
 import io
+import os
 import base64
 import pyodide
 import matplotlib as mpl
@@ -164,14 +166,12 @@ async def processFile(e):
     ax.set_ylabel("T-SNE 2")
     tooltip = mpld3.plugins.PointHTMLTooltip(sc2, labels=custom_labels, voffset=10, hoffset=10)
     mpld3.plugins.connect(fig2, tooltip)
-    tsne_interactive_html = mpld3.fig_to_html(fig2)
+    mpld3.save_html(fig2, "tsne_interactive.html")
     print("html conversion")
+    tsne_int_path = os.getcwd() + "/tsne_interactive.html"
     tsne_encoded = fig_to_base64(fig2)
-    print("static encoding")
     tsne_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
-    print("image link formed")
     tsneURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
-    print("Url made")
     js.createLink(tsneURL, "tsne download link")
     js.document.getElementById("tsne download link").innerHTML = tsne_html
     js.document.getElementById("tsne interactive").innerHTML = tsne_interactive_html
