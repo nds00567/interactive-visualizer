@@ -116,7 +116,7 @@ async def processFile(e):
   for file in files:
     data = js.Uint8Array.new(await file.arrayBuffer())
     df = ad.read_h5ad(io.BytesIO(bytearray(data))).to_df().round(4)
-    
+    cleaned_df = df.reset_index().drop("index", axis=1)
     # PCA Graph
     X = StandardScaler().fit_transform(df)
     pca = PCA(n_components = 2).fit_transform(X)
@@ -128,17 +128,16 @@ async def processFile(e):
     x = pca_df["PC 1"]
     y = pca_df["PC 2"]
     fig1, ax = plt.subplots()
-    for i in range(3):
-      idx = predicted_clusters == i
-      ax.scatter(x[idx], y[idx], color=colors[i], s=10, alpha=0.25)
+    pca_combined_df = pd.concat([pca_df, cleaned_df], axis = 1)
+    sc = ax.scatter(pca_combined_df["PC 1"], pca_combined_df["t-SNE 2"], c=pca_combined_df["kmean"], cmap="brg", s=3)
     ax.set_title("Single-Cell Behavior (PCA Analysis)")
     ax.set_xlabel("PC 1")
     ax.set_ylabel("PC 2")
     pca_encoded = fig_to_base64(fig1)
-    my_html = '<img src="data:image/png;base64,{}">'.format(pca_encoded.decode("utf-8"))
-    dataURL = "data:image/png;base64," + pca_encoded.decode("utf-8")
-    js.createLink(dataURL, "pca download link")
-    js.document.getElementById("pca download link").innerHTML = my_html
+    pca_html = '<img src="data:image/png;base64,{}">'.format(pca_encoded.decode("utf-8"))
+    pcaURL = "data:image/png;base64," + pca_encoded.decode("utf-8")
+    js.createLink(pcaURL, "pca download link")
+    js.document.getElementById("pca download link").innerHTML = pca_html
     
     # T-SNE Graph
     tsne = TSNE(n_components=2,random_state=0,n_iter=700)
@@ -148,39 +147,41 @@ async def processFile(e):
     kmeans = KMeans(n_clusters=3, random_state=0).fit(df)
     y_kmeans = kmeans.predict(df)
     df['kmean'] = kmeans.labels_
-    cleaned_df = df.reset_index().drop("index", axis=1)
-    combined_df = pd.concat([tsne_df, cleaned_df], axis = 1)
     fig2, ax = plt.subplots()
-    sc = ax.scatter(combined_df["t-SNE 1"], combined_df["t-SNE 2"], c=combined_df["kmean"], cmap="brg", s=3)
+    tsne_combined_df = pd.concat([tsne_df, cleaned_df], axis = 1)
+    sc2 = ax.scatter(tsne_combined_df["t-SNE 1"], tsne_combined_df["t-SNE 2"], c=tsne_combined_df["kmean"], cmap="brg", s=3)
     ax.set_title("Single-Cell Behavior (t-SNE Analysis)")
     custom_labels = []
-    for index, row in combined_df.iterrows():
+    for index, row in tsne_combined_df.iterrows():
 	custom_label = ''
         for col in col_names:
-	    x = combined_df["t-SNE 1"][index]
-	    y = combined_df["t-SNE 2"][index]
-	    custom_label += '{column_name}: {value:.4f}\n'.format(column_name=col, value=combined_df[col][index])
+	    x = tsne_combined_df["t-SNE 1"][index]
+	    y = tsne_combined_df["t-SNE 2"][index]
+	    custom_label += '{column_name}: {value:.4f}\n'.format(column_name=col, value=tsne_combined_df[col][index])
         custom_labels += [custom_label]
     ax.set_xlabel("T-SNE 1")
     ax.set_ylabel("T-SNE 2")
-    tooltip = mpld3.plugins.PointHTMLTooltip(sc, labels=custom_labels, voffset=10, hoffset=10)
+    tooltip = mpld3.plugins.PointHTMLTooltip(sc2, labels=custom_labels, voffset=10, hoffset=10)
     mpld3.plugins.connect(fig2, tooltip)
     tsne_html = mpld3.fig_to_html(fig2)
     tsne_encoded = fig_to_base64(fig2)
-    my_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
-    dataURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
-    js.createLink(dataURL, "tsne download link")
-    js.document.getElementById("tsne download link").innerHTML = my_html
+    tsne_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
+    tsneURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
+    js.createLink(tsneURL, "tsne download link")
+    js.document.getElementById("tsne download link").innerHTML = tsne_html
+    js.document.getElementById("tsne interactive").innerHTML = tsne_html
 
 # Hide the t-SNE plot
 def PCA_change(self):
     js.document.getElementById("comment").style.display = "inline-block"
+    js.document.getElementById("pca interactive").style.display = "inline-block"
     js.document.getElementById("pca matplotlib").style.display = "inline-block"
     js.document.getElementById("tsne matplotlib").style.display = "none"
 
 # Hide the PCA plot
 def TSNE_change(self):
     js.document.getElementById("comment").style.display = "inline-block"
+    js.document.getElementById("tsne interactive").style.display = "inline-block"
     js.document.getElementById("tsne matplotlib").style.display = "inline-block"
     js.document.getElementById("pca matplotlib").style.display = "none"
 
@@ -193,12 +194,14 @@ TSNE_proxy = pyodide.ffi.create_proxy(TSNE_change)
 js.document.getElementById("tsne button").addEventListener("click", TSNE_proxy)
 </py-script>
 
-<!-- PCA plot div, show if PCA selected-->
+<!-- PCA plot div (both interactive and static), show if PCA selected-->
+<div id="pca interactive" style="display: none;"></div>
 <div id="pca matplotlib" style="display: none;">
     <a id="pca download link" download="pca plot.png"></a>
 </div>
 
-<!-- t-SNE plot div, show if t-SNE selected -->
+<!-- t-SNE plot div (both interactive and static), show if t-SNE selected -->
+<div id="tsne interactive" style="display: none;"></div>
 <div id="tsne matplotlib" style="display: none;">
 	<a id="tsne download link" download="tsne plot.png"></a>
 </div>
