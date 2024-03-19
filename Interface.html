@@ -174,7 +174,7 @@ async def processFile(e):
     tsneURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
     js.createLink(tsneURL, "tsne download link")
     js.document.getElementById("tsne download link").innerHTML = tsne_html
-    js.document.getElementById("tsne interactive").innerHTML = tsne_interactive_html
+    js.document.getElementById("tsne interactive").src = tsne_int_path
     print("t-SNE works!")
 
 # Hide the t-SNE plot
@@ -201,13 +201,12 @@ js.document.getElementById("tsne button").addEventListener("click", TSNE_proxy)
 </py-script>
 
 <!-- PCA plot div (both interactive and static), show if PCA selected-->
-<embed type="text/html" id="pca interactive" style="display: none;">
 <div id="pca matplotlib" style="display: none;">
     <a id="pca download link" download="pca plot.png"></a>
 </div>
 
 <!-- t-SNE plot div (both interactive and static), show if t-SNE selected -->
-<div id="tsne interactive" style="display: none;"></div>
+<iframe id="pca interactive" src="path/default.html" style="display: none;"></iframe>
 <div id="tsne matplotlib" style="display: none;">
 	<a id="tsne download link" download="tsne plot.png"></a>
 </div>
