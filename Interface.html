@@ -119,24 +119,21 @@ async def processFile(e):
     
     # PCA Graph
     X = StandardScaler().fit_transform(df)
-    pca = PCA(n_components = 3).fit_transform(X)
-    pca_df = pd.DataFrame(pca, columns = ["PC 1", "PC 2", "PC 3"])
-    kmeans = KMeans(n_clusters=3, random_state=1).fit(df)
+    pca = PCA(n_components = 2).fit_transform(X)
+    pca_df = pd.DataFrame(pca, columns = ["PC 1", "PC 2"])
+    kmeans = KMeans(n_clusters=4, random_state=0).fit(df)
     predicted_clusters = kmeans.predict(df)
     df['kmean'] = kmeans.labels_
-    colors = ['orange', 'green', 'blue']
+    colors = ['blue', 'yellow', 'green', 'red']
     x = pca_df["PC 1"]
     y = pca_df["PC 2"]
-    z = pca_df["PC 3"]
-    fig1 = plt.figure()
-    ax = fig1.add_subplot(projection='3d')
+    fig1, ax = plt.subplots()
     for i in range(3):
       idx = predicted_clusters == i
-      ax.scatter(x[idx], y[idx], z[idx], color=colors[i], s=10, alpha=0.25)
+      ax.scatter(x[idx], y[idx], color=colors[i], s=10, alpha=0.25)
     ax.set_title("Single-Cell Behavior (PCA Analysis)")
     ax.set_xlabel("PC 1")
     ax.set_ylabel("PC 2")
-    ax.set_zlabel("PC 3")
     pca_encoded = fig_to_base64(fig1)
     my_html = '<img src="data:image/png;base64,{}">'.format(pca_encoded.decode("utf-8"))
     dataURL = "data:image/png;base64," + pca_encoded.decode("utf-8")
