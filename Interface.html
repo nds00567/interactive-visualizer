@@ -141,27 +141,31 @@ async def processFile(e):
     js.document.getElementById("pca download link").innerHTML = my_html
     
     # T-SNE Graph
-    tsne = TSNE(n_components=3,init="random",random_state=0,n_iter=300)
+    tsne = TSNE(n_components=2,random_state=0,n_iter=700)
     tsne = tsne.fit_transform(df)
-    tsne_df = pd.DataFrame(tsne, columns = ["t-SNE 1", "t-SNE 2", "t-SNE 3"])
+    tsne_df = pd.DataFrame(tsne, columns = ["t-SNE 1", "t-SNE 2"])
+    col_names = df.columns.values.tolist()
     kmeans = KMeans(n_clusters=3, random_state=0).fit(df)
     y_kmeans = kmeans.predict(df)
     df['kmean'] = kmeans.labels_
-    colors = ['red', 'green', 'blue']
-    x = tsne_df["t-SNE 1"]
-    y = tsne_df["t-SNE 2"]
-    z = tsne_df["t-SNE 3"]
-    df = df.reset_index().drop("index", axis=1)
-    combined_df = pd.concat([tsne_df, df], axis = 1)
-    fig2 = plt.Figure()
-    ax = fig2.add_subplot(projection="3d")
-    for i in range(3):
-      idx = y_kmeans == i
-      ax.scatter(x[idx], y[idx], z[idx], color=colors[i], s=10, alpha=0.25)
+    cleaned_df = df.reset_index().drop("index", axis=1)
+    combined_df = pd.concat([tsne_df, cleaned_df], axis = 1)
+    fig2, ax = plt.subplots()
+    sc = ax.scatter(combined_df["t-SNE 1"], combined_df["t-SNE 2"], c=combined_df["kmean"], cmap="brg", s=3)
     ax.set_title("Single-Cell Behavior (t-SNE Analysis)")
+    custom_labels = []
+    for index, row in combined_df.iterrows():
+	custom_label = ''
+        for col in col_names:
+	    x = combined_df["t-SNE 1"][index]
+	    y = combined_df["t-SNE 2"][index]
+	    custom_label += '{column_name}: {value:.4f}\n'.format(column_name=col, value=combined_df[col][index])
+        custom_labels += [custom_label]
     ax.set_xlabel("T-SNE 1")
     ax.set_ylabel("T-SNE 2")
-    ax.set_zlabel("T-SNE 3")
+    tooltip = mpld3.plugins.PointHTMLTooltip(sc, labels=custom_labels, voffset=10, hoffset=10)
+    mpld3.plugins.connect(fig2, tooltip)
+    tsne_html = mpld3.fig_to_html(fig2)
     tsne_encoded = fig_to_base64(fig2)
     my_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
     dataURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
