@@ -108,11 +108,15 @@ from disable_warnings import *
 
 # Upon uploading a file, we want to generate an interactive graph
 # Base64 encoder to enable embedding the image itself into the div
-def fig_to_base64(fig):
+def fig_to_base64_png(fig):
   img = io.BytesIO()
   fig.savefig(img, format='png', bbox_inches='tight')
   img.seek(0)
   return base64.b64encode(img.getvalue())
+
+def fig_to_base64_html(fig):
+  html_str = mpld3.fig_to_html(fig)
+  return js.btoa(html_str)
 
 # Process the .h5 uploaded once the file selected changes from 'No file selected'
 async def processFile(e):
@@ -136,7 +140,7 @@ async def processFile(e):
     ax.set_title("Single-Cell Behavior (PCA Analysis)")
     ax.set_xlabel("PC 1")
     ax.set_ylabel("PC 2")
-    pca_encoded = fig_to_base64(fig1)
+    pca_encoded = fig_to_base64_png(fig1)
     pca_html = '<img src="data:image/png;base64,{}">'.format(pca_encoded.decode("utf-8"))
     pcaURL = "data:image/png;base64," + pca_encoded.decode("utf-8")
     js.createLink(pcaURL, "pca download link")
@@ -166,28 +170,25 @@ async def processFile(e):
     ax.set_ylabel("T-SNE 2")
     tooltip = mpld3.plugins.PointHTMLTooltip(sc2, labels=custom_labels, voffset=10, hoffset=10)
     mpld3.plugins.connect(fig2, tooltip)
-    mpld3.save_html(fig2, "tsne_interactive.html")
-    print("html conversion")
-    tsne_int_path = os.getcwd() + "/tsne_interactive.html"
-    tsne_encoded = fig_to_base64(fig2)
+    tsne_interactive_encoded = fig_to_base64_html(fig2)
+    tsneInteractiveURL = "data:text/html;base64," + tsne_interactive_encoded
+    js.createLink(tsneInteractiveURL, "tsne interactive link")
+    tsne_path = os.path.join(os.getcwd(), "tsne_interactive.html")
+    tsne_encoded = fig_to_base64_png(fig2)
     tsne_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
     tsneURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
     js.createLink(tsneURL, "tsne download link")
     js.document.getElementById("tsne download link").innerHTML = tsne_html
-    js.document.getElementById("tsne interactive").src = tsne_int_path
-    print("t-SNE works!")
 
 # Hide the t-SNE plot
 def PCA_change(self):
     js.document.getElementById("comment").style.display = "inline-block"
-    js.document.getElementById("pca interactive").style.display = "inline-block"
     js.document.getElementById("pca matplotlib").style.display = "inline-block"
     js.document.getElementById("tsne matplotlib").style.display = "none"
 
 # Hide the PCA plot
 def TSNE_change(self):
     js.document.getElementById("comment").style.display = "inline-block"
-    js.document.getElementById("tsne interactive").style.display = "inline-block"
     js.document.getElementById("tsne matplotlib").style.display = "inline-block"
     js.document.getElementById("pca matplotlib").style.display = "none"
 
@@ -202,11 +203,11 @@ js.document.getElementById("tsne button").addEventListener("click", TSNE_proxy)
 
 <!-- PCA plot div (both interactive and static), show if PCA selected-->
 <div id="pca matplotlib" style="display: none;">
-    <a id="pca download link" download="pca plot.png"></a>
+    <a id="pca download link" download="pca plot.png">Click here!</a>
 </div>
 
 <!-- t-SNE plot div (both interactive and static), show if t-SNE selected -->
-<iframe id="pca interactive" src="path/default.html" style="display: none;"></iframe>
+<a id="tsne interactive link" href="default.html"></a>
 <div id="tsne matplotlib" style="display: none;">
 	<a id="tsne download link" download="tsne plot.png"></a>
 </div>
