@@ -53,11 +53,6 @@
 </style>
 <body>
   
-<!-- loading screen -->
-<dialog id="loading">
-  <h1>Loading...</h1>
-</dialog>
-
 <!-- Only accept HDF5 file types -->
 <label for="myH5File">
   Upload an H5 file here!
@@ -93,7 +88,6 @@
 import pandas as pd
 import js
 import io
-import os
 import base64
 import pyodide
 import matplotlib as mpl
@@ -108,15 +102,11 @@ from disable_warnings import *
 
 # Upon uploading a file, we want to generate an interactive graph
 # Base64 encoder to enable embedding the image itself into the div
-def fig_to_base64_png(fig):
+def fig_to_base64(fig):
   img = io.BytesIO()
   fig.savefig(img, format='png', bbox_inches='tight')
   img.seek(0)
   return base64.b64encode(img.getvalue())
-
-def fig_to_base64_html(fig):
-  html_str = mpld3.fig_to_html(fig)
-  return js.btoa(html_str)
 
 # Process the .h5 uploaded once the file selected changes from 'No file selected'
 async def processFile(e):
@@ -140,7 +130,7 @@ async def processFile(e):
     ax.set_title("Single-Cell Behavior (PCA Analysis)")
     ax.set_xlabel("PC 1")
     ax.set_ylabel("PC 2")
-    pca_encoded = fig_to_base64_png(fig1)
+    pca_encoded = fig_to_base64(fig1)
     pca_html = '<img src="data:image/png;base64,{}">'.format(pca_encoded.decode("utf-8"))
     pcaURL = "data:image/png;base64," + pca_encoded.decode("utf-8")
     js.createLink(pcaURL, "pca download link")
@@ -170,11 +160,10 @@ async def processFile(e):
     ax.set_ylabel("T-SNE 2")
     tooltip = mpld3.plugins.PointHTMLTooltip(sc2, labels=custom_labels, voffset=10, hoffset=10)
     mpld3.plugins.connect(fig2, tooltip)
-    tsne_interactive_encoded = fig_to_base64_html(fig2)
-    tsneInteractiveURL = "data:text/html;base64," + tsne_interactive_encoded
+    tsne_html_str = mpld3.fig_to_html(fig2)
+    tsneInteractiveURL = "data:text/html;charset=UTF-8,<html>" + tsne_html_str + "</html>"
     js.createLink(tsneInteractiveURL, "tsne interactive link")
-    tsne_path = os.path.join(os.getcwd(), "tsne_interactive.html")
-    tsne_encoded = fig_to_base64_png(fig2)
+    tsne_encoded = fig_to_base64(fig2)
     tsne_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
     tsneURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
     js.createLink(tsneURL, "tsne download link")
