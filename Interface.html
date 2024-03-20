@@ -88,6 +88,7 @@
 import pandas as pd
 import js
 import io
+import os
 import base64
 import pyodide
 import matplotlib as mpl
@@ -121,12 +122,11 @@ async def processFile(e):
     kmeans = KMeans(n_clusters=4, random_state=0).fit(df)
     predicted_clusters = kmeans.predict(df)
     df['kmean'] = kmeans.labels_
-    colors = ['blue', 'purple', 'green', 'red']
     x = pca_df["PC 1"]
     y = pca_df["PC 2"]
     fig1, ax = plt.subplots()
     pca_combined_df = pd.concat([pca_df, df], axis = 1)
-    sc = ax.scatter(pca_combined_df["PC 1"], pca_combined_df["PC 2"], c=pca_combined_df["kmean"], cmap="brg", s=3)
+    sc = ax.scatter(pca_combined_df["PC 1"], pca_combined_df["PC 2"], c=pca_combined_df["kmean"], cmap="plasma", s=3)
     ax.set_title("Single-Cell Behavior (PCA Analysis)")
     ax.set_xlabel("PC 1")
     ax.set_ylabel("PC 2")
@@ -160,7 +160,8 @@ async def processFile(e):
     ax.set_ylabel("T-SNE 2")
     tooltip = mpld3.plugins.PointHTMLTooltip(sc2, labels=custom_labels, voffset=10, hoffset=10)
     mpld3.plugins.connect(fig2, tooltip)
-    tsne_html_str = mpld3.fig_to_html(fig2)
+    os.
+    mpld3.save_html(fig2)
     tsneInteractiveURL = "data:text/html;charset=UTF-8" + js.encodeURIComponent(tsne_html_str)
     js.createLink(tsneInteractiveURL, "tsne interactive link")
     tsne_encoded = fig_to_base64(fig2)
