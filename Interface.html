@@ -160,10 +160,9 @@ async def processFile(e):
     ax.set_ylabel("T-SNE 2")
     tooltip = mpld3.plugins.PointHTMLTooltip(sc2, labels=custom_labels, voffset=10, hoffset=10)
     mpld3.plugins.connect(fig2, tooltip)
-    os.
-    mpld3.save_html(fig2)
-    tsneInteractiveURL = "data:text/html;charset=UTF-8" + js.encodeURIComponent(tsne_html_str)
-    js.createLink(tsneInteractiveURL, "tsne interactive link")
+    newPath = os.path.join(os.getcwd(), "tsne_interactive.html")
+    mpld3.save_html(fig2, newPath)
+    js.createLink(newPath, "tsne interactive link")
     tsne_encoded = fig_to_base64(fig2)
     tsne_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
     tsneURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
@@ -197,7 +196,7 @@ js.document.getElementById("tsne button").addEventListener("click", TSNE_proxy)
 </div>
 
 <!-- t-SNE plot div (both interactive and static), show if t-SNE selected -->
-<a id="tsne interactive link" href="default.html"></a>
+<iframe id="tsne interactive link" href="default.html"></iframe>
 <div id="tsne matplotlib" style="display: none;">
 	<a id="tsne download link" download="tsne plot.png"></a>
 </div>
