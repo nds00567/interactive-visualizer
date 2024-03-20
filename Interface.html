@@ -161,7 +161,7 @@ async def processFile(e):
     tooltip = mpld3.plugins.PointHTMLTooltip(sc2, labels=custom_labels, voffset=10, hoffset=10)
     mpld3.plugins.connect(fig2, tooltip)
     tsne_html_str = mpld3.fig_to_html(fig2)
-    tsneInteractiveURL = "data:text/html;charset=UTF-8,<html>" + tsne_html_str + "</html>"
+    tsneInteractiveURL = "data:text/html;charset=UTF-8" + js.encodeURIComponent(tsne_html_str)
     js.createLink(tsneInteractiveURL, "tsne interactive link")
     tsne_encoded = fig_to_base64(fig2)
     tsne_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
