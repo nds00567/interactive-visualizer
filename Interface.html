@@ -70,7 +70,7 @@
 
 <!--import packages -->
 <py-config style="color: transparent; user-select: none;">
-  packages = ["pandas", "scikit-learn", "matplotlib", "anndata", "disable_warnings", "mpld3"]
+  packages = ["pandas", "scikit-learn", "matplotlib", "anndata", "disable_warnings", "mpld3", "requests"]
 </py-config>
 
 <!-- enable download -->
@@ -94,6 +94,7 @@ import pyodide
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import mpld3
+import requests
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
@@ -101,7 +102,6 @@ from sklearn.decomposition import PCA
 import anndata as ad
 from disable_warnings import *
 
-# Upon uploading a file, we want to generate an interactive graph
 # Base64 encoder to enable embedding the image itself into the div
 def fig_to_base64(fig):
   img = io.BytesIO()
@@ -121,7 +121,7 @@ async def processFile(e):
     pca_df = pd.DataFrame(pca, columns = ["PC 1", "PC 2"])
     kmeans = KMeans(n_clusters=4, random_state=0).fit(df)
     predicted_clusters = kmeans.predict(df)
-    df['kmean'] = kmeans.labels_
+    df['kmean'] = kmeans.labels_ 
     x = pca_df["PC 1"]
     y = pca_df["PC 2"]
     fig1, ax = plt.subplots()
@@ -160,9 +160,16 @@ async def processFile(e):
     ax.set_ylabel("T-SNE 2")
     tooltip = mpld3.plugins.PointHTMLTooltip(sc2, labels=custom_labels, voffset=10, hoffset=10)
     mpld3.plugins.connect(fig2, tooltip)
-    newPath = os.path.join(os.getcwd(), "tsne_interactive.html")
-    mpld3.save_html(fig2, newPath)
-    js.createLink(newPath, "tsne interactive link")
+    buffer = io.StringIO()
+    mpld3.save_html(fig2, buffer) # buffer.getvalue() works in terms of rendering
+    response = requests.Response()
+    print("response made")
+    response.headers['Content-Type'] = 'text/html'
+    response.headers['Content-Disposition'] = 'attachment; filename={}'.format("my_html_file.html")
+    print("response headers made")
+    response.content = bytes(buffer.getvalue(), 'utf-8')
+    print("response url made")
+    print(response.url)
     tsne_encoded = fig_to_base64(fig2)
     tsne_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
     tsneURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
@@ -196,7 +203,6 @@ js.document.getElementById("tsne button").addEventListener("click", TSNE_proxy)
 </div>
 
 <!-- t-SNE plot div (both interactive and static), show if t-SNE selected -->
-<iframe id="tsne interactive link" href="default.html"></iframe>
 <div id="tsne matplotlib" style="display: none;">
 	<a id="tsne download link" download="tsne plot.png"></a>
 </div>
