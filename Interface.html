@@ -79,6 +79,20 @@
     a = document.getElementById(id);
     a.href = dataURL;
   }
+  
+  function createURL(html_string, id) {
+    const file = new File([html_string], 'local-file.html');
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      // convert image file to base64 string
+      document.getElementById(id).src = reader.result;
+    },
+    false,
+    );
+    if (file) {
+      reader.readAsDataURL(file);
+    }
+  }
 </script>
 
 <!-- main Python code -->
@@ -162,14 +176,16 @@ async def processFile(e):
     mpld3.plugins.connect(fig2, tooltip)
     buffer = io.StringIO()
     mpld3.save_html(fig2, buffer) # buffer.getvalue() works in terms of rendering
-    response = requests.Response()
-    print("response made")
-    response.headers['Content-Type'] = 'text/html'
-    response.headers['Content-Disposition'] = 'attachment; filename={}'.format("my_html_file.html")
-    print("response headers made")
-    response.content = bytes(buffer.getvalue(), 'utf-8')
-    print("response url made")
-    print(response.url)
+    working_path = os.path.join(os.getcwd(), "tsne_out.html")
+    with open(working_path, "w") as f:
+      f.write(buffer.getvalue())
+    f.close()
+    tsne_url = "data:text/html,{}".format(js.encodeURIComponent(buffer.getvalue()))
+    js.document.getElementById("tsne interactive link").src = working_path
+    print(os.path.isfile(working_path)) # use this if True
+    js.createLink(tsne_url, "tsne interactive link") # tentative
+    with open(working_path, "r") as f:
+      js.createURL(f.read(), "tsne alt interactive link 2")
     tsne_encoded = fig_to_base64(fig2)
     tsne_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
     tsneURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
@@ -204,7 +220,10 @@ js.document.getElementById("tsne button").addEventListener("click", TSNE_proxy)
 
 <!-- t-SNE plot div (both interactive and static), show if t-SNE selected -->
 <div id="tsne matplotlib" style="display: none;">
-	<a id="tsne download link" download="tsne plot.png"></a>
+    <a id="tsne interactive link" download="tsne interactive plot.png"></a>
+    <embed id="tsne alt interactive link" src="snippet.html">
+    <embed id="tsne alt interactive link 2" src="snippet.html">
+    <a id="tsne download link" download="tsne plot.png"></a>
 </div>
 <p id="comment" style="display: none;">To use this viewer, either play around with the interactive plot to see your data come to life, or save the static image generated! To do this, either click on the image, or alternatively, take a screenshot!</p>
 </html>
