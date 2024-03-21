@@ -125,22 +125,34 @@ async def processFile(e):
   files = e.target.files.to_py()
   for file in files:
     data = js.Uint8Array.new(await file.arrayBuffer())
-    df = ad.read_h5ad(io.BytesIO(bytearray(data))).to_df().round(4).reset_index().drop("index", axis=1)
+    df = ad.read_h5ad(io.BytesIO(bytearray(data))).to_df().round(4)
     # PCA Graph
+    pca_col_names = df.columns.values.tolist()
     X = StandardScaler().fit_transform(df)
     pca = PCA(n_components = 2).fit_transform(X)
     pca_df = pd.DataFrame(pca, columns = ["PC 1", "PC 2"])
-    kmeans = KMeans(n_clusters=4, random_state=0).fit(df)
-    predicted_clusters = kmeans.predict(df)
-    df['kmean'] = kmeans.labels_ 
-    x = pca_df["PC 1"]
-    y = pca_df["PC 2"]
-    fig1, ax = plt.subplots()
-    pca_combined_df = pd.concat([pca_df, df], axis = 1)
-    sc = ax.scatter(pca_combined_df["PC 1"], pca_combined_df["PC 2"], c=pca_combined_df["kmean"], cmap="plasma", s=3)
-    ax.set_title("Single-Cell Behavior (PCA Analysis)")
-    ax.set_xlabel("PC 1")
-    ax.set_ylabel("PC 2")
+    pca_kmeans = KMeans(n_clusters=3, random_state=0).fit(df)
+    y_kmeans = pca_kmeans.predict(df)
+    df['kmean'] = pca_kmeans.labels_
+    pca_cleaned_df = df.reset_index().drop("index", axis=1)
+    pca_combined_df = pd.concat([pca_df, pca_cleaned_df], axis = 1)
+    fig1, ax1 = plt.subplots()
+    sc1 = ax1.scatter(pca_combined_df["PC 1"], pca_combined_df["PC 2"], c=pca_combined_df["kmean"], cmap="plasma", s=3)
+    ax1.set_title("Single-Cell Behavior (PCA Analysis)")
+    pca_custom_labels = []
+    for index1, row in pca_combined_df.iterrows():
+      custom_label = ''
+      for col1 in pca_col_names:
+        custom_label += '{column_name}: {value:.4f}\n'.format(column_name=col1, value=pca_combined_df[col1][index1])
+      pca_custom_labels += [custom_label]
+    ax1.set_xlabel("PC 1")
+    ax1.set_ylabel("PC 2")
+    tooltip1 = mpld3.plugins.PointHTMLTooltip(sc1, labels=pca_custom_labels, voffset=10, hoffset=-10)
+    mpld3.plugins.connect(fig1, tooltip1)
+    buffer1 = io.StringIO()
+    mpld3.save_html(fig1, buffer1)
+    pca_dataURL = "data:text/html,{}".format(js.encodeURIComponent(buffer1.getvalue()))
+    js.createLink(pca_dataURL, "pca interactive link")
     pca_encoded = fig_to_base64(fig1)
     pca_html = '<img src="data:image/png;base64,{}">'.format(pca_encoded.decode("utf-8"))
     pcaURL = "data:image/png;base64," + pca_encoded.decode("utf-8")
@@ -148,33 +160,32 @@ async def processFile(e):
     js.document.getElementById("pca download link").innerHTML = pca_html
     
     # T-SNE Graph
-    tsne = TSNE(n_components=2,random_state=0)
+    tsne = TSNE(n_components=2,init='random')
     tsne = tsne.fit_transform(df)
     tsne_df = pd.DataFrame(tsne, columns = ["t-SNE 1", "t-SNE 2"])
-    col_names = df.columns.values.tolist()
+    tsne_col_names = df.columns.values.tolist()
     kmeans = KMeans(n_clusters=3, random_state=0).fit(df)
     y_kmeans = kmeans.predict(df)
     df['kmean'] = kmeans.labels_
-    fig2, ax = plt.subplots()
-    tsne_combined_df = pd.concat([tsne_df, df], axis = 1)
-    sc2 = ax.scatter(tsne_combined_df["t-SNE 1"], tsne_combined_df["t-SNE 2"], c=tsne_combined_df["kmean"], cmap="brg", s=3)
-    ax.set_title("Single-Cell Behavior (t-SNE Analysis)")
-    custom_labels = []
+    tsne_cleaned_df = df.reset_index().drop("index", axis=1)
+    tsne_combined_df = pd.concat([tsne_df, tsne_cleaned_df], axis = 1)
+    fig2, ax2 = plt.subplots()
+    sc2 = ax2.scatter(tsne_combined_df["t-SNE 1"], tsne_combined_df["t-SNE 2"], c=tsne_combined_df["kmean"], cmap="brg", s=3)
+    ax2.set_title("Single-Cell Behavior (t-SNE Analysis)")
+    tsne_custom_labels = []
     for index, row in tsne_combined_df.iterrows():
       custom_label = ''
-      for col in col_names:
-        x = tsne_combined_df["t-SNE 1"][index]
-        y = tsne_combined_df["t-SNE 2"][index]
-        custom_label += '{column_name}: {value:.4f}\n'.format(column_name=col, value=tsne_combined_df[col][index])
-      custom_labels += [custom_label]
-    ax.set_xlabel("T-SNE 1")
-    ax.set_ylabel("T-SNE 2")
-    tooltip = mpld3.plugins.PointHTMLTooltip(sc2, labels=custom_labels, voffset=10, hoffset=10)
-    mpld3.plugins.connect(fig2, tooltip)
-    buffer = io.StringIO()
-    mpld3.save_html(fig2, buffer) # buffer.getvalue() works in terms of rendering
-    new_file_dataURL = "data:text/html,{}".format(js.encodeURIComponent(buffer.getvalue()))
-    js.createLink(new_file_dataURL, "tsne interactive link")
+      for col2 in tsne_col_names:
+        custom_label += '{column_name}: {value:.4f}\n'.format(column_name=col2, value=tsne_combined_df[col2][index])
+      tsne_custom_labels += [custom_label]
+    ax2.set_xlabel("T-SNE 1")
+    ax2.set_ylabel("T-SNE 2")
+    tooltip2 = mpld3.plugins.PointHTMLTooltip(sc2, labels=tsne_custom_labels, voffset=10, hoffset=-10)
+    mpld3.plugins.connect(fig2, tooltip2)
+    buffer2 = io.StringIO()
+    mpld3.save_html(fig2, buffer2)
+    tsne_dataURL = "data:text/html,{}".format(js.encodeURIComponent(buffer2.getvalue()))
+    js.createLink(tsne_dataURL, "tsne interactive link")
     tsne_encoded = fig_to_base64(fig2)
     tsne_html = '<img src="data:image/png;base64,{}">'.format(tsne_encoded.decode("utf-8"))
     tsneURL = "data:image/png;base64," + tsne_encoded.decode("utf-8")
@@ -202,15 +213,15 @@ TSNE_proxy = pyodide.ffi.create_proxy(TSNE_change)
 js.document.getElementById("tsne button").addEventListener("click", TSNE_proxy)
 </py-script>
 
-<!-- PCA plot div (both interactive and static), show if PCA selected-->
+<!-- PCA static and interactive plots, show if PCA selected-->
 <div id="pca matplotlib" style="display: none;">
+    <a class="btn pca" id="pca interactive link" href="snippet.html" download="pca_interactive.html">Download an interactive rendering of PCA here!</a>
     <a id="pca download link" download="pca plot.png">Click here!</a>
 </div>
 
-<!-- t-SNE plot div (both interactive and static), show if t-SNE selected -->
+<!-- t-SNE static plot, show if t-SNE selected -->
 <div id="tsne matplotlib" style="display: none;">
-    <a class="btn tsne" id="tsne interactive link" href="snippet.html" download="tsne_interactive.html">Download an interactive rendering here!</a>
-    <br><br>
+    <a class="btn tsne" id="tsne interactive link" href="snippet.html" download="tsne_interactive.html">Download an interactive rendering of t-SNE here!</a>
     <a id="tsne download link" download="tsne plot.png"></a>
 </div>
 <p id="comment" style="display: none;">To use this viewer, either play around with the interactive plot to see your data come to life, or save the static image generated! To do this, either click on the image, or alternatively, take a screenshot!</p>
